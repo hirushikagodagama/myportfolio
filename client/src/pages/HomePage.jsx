@@ -8,7 +8,7 @@ import {
   Mail,
   MapPin,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "../api/client";
 import ProjectCard from "../components/public/ProjectCard";
 import SectionHeading from "../components/public/SectionHeading";
@@ -20,6 +20,8 @@ const iconMap = {
   link: ArrowRight,
 };
 
+const PUBLIC_SYNC_KEY = "portfolio_content_updated_at";
+
 export default function HomePage() {
   const [content, setContent] = useState({
     profile: null,
@@ -29,12 +31,42 @@ export default function HomePage() {
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    api
-      .get("/public/content")
-      .then(({ data }) => setContent(data))
-      .finally(() => setIsLoading(false));
+  const loadContent = useCallback(async () => {
+    const { data } = await api.get("/public/content", {
+      params: { t: Date.now() },
+    });
+    setContent(data);
   }, []);
+
+  useEffect(() => {
+    loadContent().finally(() => setIsLoading(false));
+
+    const handleStorage = (event) => {
+      if (event.key === PUBLIC_SYNC_KEY) {
+        loadContent();
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        loadContent();
+      }
+    };
+
+    const handleFocus = () => {
+      loadContent();
+    };
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [loadContent]);
 
   if (isLoading) {
     return <div className="flex min-h-screen items-center justify-center text-muted">Loading portfolio...</div>;

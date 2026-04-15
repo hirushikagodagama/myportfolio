@@ -3,6 +3,50 @@ import { SiteContent } from "../models/SiteContent.js";
 import { SkillCategory } from "../models/SkillCategory.js";
 import { SocialLink } from "../models/SocialLink.js";
 
+const serializeProject = (project) => {
+  const data = project.toObject ? project.toObject() : project;
+  const images = Array.isArray(data.images) && data.images.length > 0
+    ? data.images.filter(Boolean).slice(0, 5)
+    : data.image
+      ? [data.image]
+      : [];
+
+  return {
+    ...data,
+    images,
+    image: images[0] || data.image || "",
+  };
+};
+
+const normalizeProjectPayload = (body) => {
+  const techStack = Array.isArray(body.techStack)
+    ? body.techStack
+    : String(body.techStack || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+  const images = Array.isArray(body.images)
+    ? body.images
+    : Array.isArray(body.image)
+      ? body.image
+      : String(body.images || body.image || "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+
+  const gallery = images.filter(Boolean).slice(0, 5);
+
+  return {
+    ...body,
+    techStack,
+    images: gallery,
+    image: gallery[0] || body.image || "",
+    order: Number(body.order) || 0,
+    featured: body.featured === false || body.featured === "false" ? false : Boolean(body.featured),
+  };
+};
+
 export const getPublicContent = async (_req, res) => {
   const [profile, projects, skills, links] = await Promise.all([
     SiteContent.findOne({ key: "main" }),
@@ -11,7 +55,7 @@ export const getPublicContent = async (_req, res) => {
     SocialLink.find().sort({ order: 1, createdAt: 1 }),
   ]);
 
-  return res.json({ profile, projects, skills, links });
+  return res.json({ profile, projects: projects.map(serializeProject), skills, links });
 };
 
 export const getDashboardOverview = async (_req, res) => {
@@ -44,7 +88,7 @@ export const getAdminContent = async (_req, res) => {
     SocialLink.find().sort({ order: 1, createdAt: 1 }),
   ]);
 
-  return res.json({ profile, projects, skills, links });
+  return res.json({ profile, projects: projects.map(serializeProject), skills, links });
 };
 
 export const updateProfile = async (req, res) => {
@@ -85,35 +129,19 @@ export const updateAbout = async (req, res) => {
 };
 
 export const createProject = async (req, res) => {
-  const project = await Project.create({
-    ...req.body,
-    techStack: Array.isArray(req.body.techStack)
-      ? req.body.techStack
-      : String(req.body.techStack || "")
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-  });
+  const project = await Project.create(normalizeProjectPayload(req.body));
 
-  return res.status(201).json(project);
+  return res.status(201).json(serializeProject(project));
 };
 
 export const updateProject = async (req, res) => {
   const project = await Project.findByIdAndUpdate(
     req.params.id,
-    {
-      ...req.body,
-      techStack: Array.isArray(req.body.techStack)
-        ? req.body.techStack
-        : String(req.body.techStack || "")
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean),
-    },
+    normalizeProjectPayload(req.body),
     { new: true }
   );
 
-  return res.json(project);
+  return res.json(serializeProject(project));
 };
 
 export const deleteProject = async (req, res) => {

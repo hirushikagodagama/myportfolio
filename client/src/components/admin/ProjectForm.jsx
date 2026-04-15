@@ -1,3 +1,4 @@
+import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import ImageUploader from "./ImageUploader";
 
@@ -5,7 +6,7 @@ const emptyProject = {
   title: "",
   description: "",
   techStack: "",
-  image: "",
+  images: [""],
   liveUrl: "",
   githubUrl: "",
   featured: true,
@@ -14,6 +15,7 @@ const emptyProject = {
 
 export default function ProjectForm({ initialValue, onSubmit, onCancel }) {
   const [form, setForm] = useState(emptyProject);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     setForm(
@@ -21,6 +23,12 @@ export default function ProjectForm({ initialValue, onSubmit, onCancel }) {
         ? {
             ...initialValue,
             techStack: initialValue.techStack?.join(", ") || "",
+            images:
+              initialValue.images?.length > 0
+                ? initialValue.images
+                : initialValue.image
+                  ? [initialValue.image]
+                  : [""],
           }
         : emptyProject
     );
@@ -30,15 +38,50 @@ export default function ProjectForm({ initialValue, onSubmit, onCancel }) {
     setForm((current) => ({ ...current, [key]: value }));
   };
 
+  const updateImageAt = (index, value) => {
+    setForm((current) => ({
+      ...current,
+      images: current.images.map((image, imageIndex) => (imageIndex === index ? value : image)),
+    }));
+  };
+
+  const addImageSlot = () => {
+    setForm((current) => ({
+      ...current,
+      images: current.images.length >= 5 ? current.images : [...current.images, ""],
+    }));
+  };
+
+  const removeImageAt = (index) => {
+    setForm((current) => {
+      const next = current.images.filter((_, imageIndex) => imageIndex !== index);
+
+      return {
+        ...current,
+        images: next.length > 0 ? next : [""],
+      };
+    });
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-    await onSubmit({
-      ...form,
-      techStack: form.techStack,
-      order: Number(form.order) || 0,
-      featured: Boolean(form.featured),
-    });
-    setForm(emptyProject);
+    setIsSubmitting(true);
+
+    try {
+      const images = form.images.map((image) => image.trim()).filter(Boolean).slice(0, 5);
+
+      await onSubmit({
+        ...form,
+        techStack: form.techStack,
+        images,
+        image: images[0] || "",
+        order: Number(form.order) || 0,
+        featured: Boolean(form.featured),
+      });
+      setForm(emptyProject);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -102,7 +145,51 @@ export default function ProjectForm({ initialValue, onSubmit, onCancel }) {
           />
         </label>
       </div>
-      <ImageUploader value={form.image} onChange={(url) => handleChange("image", url)} label="Project image" />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-ink">Project gallery</p>
+            <p className="mt-1 text-sm text-muted">Add up to five project photos. The first one becomes the cover image.</p>
+          </div>
+          <button
+            type="button"
+            onClick={addImageSlot}
+            disabled={form.images.length >= 5}
+            className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus size={16} />
+            Add photo
+          </button>
+        </div>
+        <div className="space-y-4">
+          {form.images.map((image, index) => (
+            <div key={`${index}-${image}`} className="rounded-[1.5rem] border border-line bg-white p-4">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-ink">
+                  Photo {index + 1}
+                  {index === 0 ? " (cover)" : ""}
+                </p>
+                {form.images.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => removeImageAt(index)}
+                    className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-2 text-sm font-semibold text-muted"
+                  >
+                    <Trash2 size={14} />
+                    Remove
+                  </button>
+                ) : null}
+              </div>
+              <ImageUploader
+                value={image}
+                onChange={(url) => updateImageAt(index, url)}
+                label={`Image slot ${index + 1}`}
+                helperText="Upload or paste the project image URL. Reorder by moving your preferred cover image into slot 1."
+              />
+            </div>
+          ))}
+        </div>
+      </div>
       <label className="inline-flex items-center gap-3 rounded-full border border-line bg-canvas px-4 py-3">
         <input
           type="checkbox"
@@ -115,9 +202,10 @@ export default function ProjectForm({ initialValue, onSubmit, onCancel }) {
       <div className="flex flex-wrap gap-3">
         <button
           type="submit"
-          className="rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:bg-ink/90"
+          disabled={isSubmitting}
+          className="rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:bg-ink/90 disabled:opacity-60"
         >
-          {initialValue ? "Update project" : "Add project"}
+          {isSubmitting ? "Saving..." : initialValue ? "Update project" : "Add project"}
         </button>
         {initialValue ? (
           <button

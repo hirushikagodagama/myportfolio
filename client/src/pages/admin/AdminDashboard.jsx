@@ -1,5 +1,5 @@
 import DOMPurify from "dompurify";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, RefreshCcw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import ReactQuill from "react-quill";
 import { api } from "../../api/client";
@@ -22,6 +22,7 @@ const emptyProfile = {
 
 const emptyCategory = { name: "", items: "", order: 0 };
 const emptyLink = { label: "", url: "", icon: "link", order: 0 };
+const PUBLIC_SYNC_KEY = "portfolio_content_updated_at";
 
 export default function AdminDashboard() {
   const { logout, user } = useAuth();
@@ -36,12 +37,14 @@ export default function AdminDashboard() {
   const [skills, setSkills] = useState([]);
   const [links, setLinks] = useState([]);
   const [projectBeingEdited, setProjectBeingEdited] = useState(null);
+  const [projectFormVersion, setProjectFormVersion] = useState(0);
   const [categoryForm, setCategoryForm] = useState(emptyCategory);
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [linkForm, setLinkForm] = useState(emptyLink);
   const [editingLinkId, setEditingLinkId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState("success");
 
   const loadDashboard = async () => {
     const [{ data: overviewData }, { data: contentData }] = await Promise.all([
@@ -60,41 +63,67 @@ export default function AdminDashboard() {
     loadDashboard().finally(() => setIsLoading(false));
   }, []);
 
+  const notifyPublicRefresh = () => {
+    localStorage.setItem(PUBLIC_SYNC_KEY, String(Date.now()));
+  };
+
+  const setFlashMessage = (text, tone = "success") => {
+    setMessage(text);
+    setMessageTone(tone);
+    setTimeout(() => setMessage(""), 2500);
+  };
+
   const refresh = async (successMessage) => {
     await loadDashboard();
-    setMessage(successMessage);
-    setTimeout(() => setMessage(""), 2500);
+    notifyPublicRefresh();
+    setFlashMessage(successMessage, "success");
+  };
+
+  const withFeedback = async (action, successMessage) => {
+    try {
+      await action();
+      await refresh(successMessage);
+    } catch (error) {
+      setFlashMessage(error.response?.data?.message || "Something went wrong while saving.", "error");
+    }
+  };
+
+  const resetProjectEditor = () => {
+    setProjectBeingEdited(null);
+    setProjectFormVersion((value) => value + 1);
   };
 
   const saveProfile = async (event) => {
     event.preventDefault();
-    await api.put("/admin/profile", profile);
-    await refresh("Profile updated");
+    await withFeedback(async () => {
+      await api.put("/admin/profile", profile);
+    }, "Profile updated");
   };
 
   const saveAbout = async () => {
-    await api.put("/admin/about", { aboutHtml: profile.aboutHtml });
-    await refresh("About section updated");
+    await withFeedback(async () => {
+      await api.put("/admin/about", { aboutHtml: profile.aboutHtml });
+    }, "About section updated");
   };
 
   const saveProject = async (payload) => {
-    if (projectBeingEdited?._id) {
-      await api.put(`/admin/projects/${projectBeingEdited._id}`, payload);
-      setProjectBeingEdited(null);
-      await refresh("Project updated");
-      return;
-    }
-
-    await api.post("/admin/projects", payload);
-    await refresh("Project added");
+    await withFeedback(async () => {
+      if (projectBeingEdited?._id) {
+        await api.put(`/admin/projects/${projectBeingEdited._id}`, payload);
+      } else {
+        await api.post("/admin/projects", payload);
+      }
+      resetProjectEditor();
+    }, projectBeingEdited?._id ? "Project updated" : "Project added");
   };
 
   const removeProject = async (id) => {
-    await api.delete(`/admin/projects/${id}`);
-    if (projectBeingEdited?._id === id) {
-      setProjectBeingEdited(null);
-    }
-    await refresh("Project deleted");
+    await withFeedback(async () => {
+      await api.delete(`/admin/projects/${id}`);
+      if (projectBeingEdited?._id === id) {
+        resetProjectEditor();
+      }
+    }, "Project deleted");
   };
 
   const saveCategory = async (event) => {
@@ -104,15 +133,16 @@ export default function AdminDashboard() {
       order: Number(categoryForm.order) || 0,
     };
 
-    if (editingCategoryId) {
-      await api.put(`/admin/skills/${editingCategoryId}`, payload);
-      setEditingCategoryId(null);
-    } else {
-      await api.post("/admin/skills", payload);
-    }
+    await withFeedback(async () => {
+      if (editingCategoryId) {
+        await api.put(`/admin/skills/${editingCategoryId}`, payload);
+        setEditingCategoryId(null);
+      } else {
+        await api.post("/admin/skills", payload);
+      }
 
-    setCategoryForm(emptyCategory);
-    await refresh("Skills updated");
+      setCategoryForm(emptyCategory);
+    }, "Skills updated");
   };
 
   const editCategory = (category) => {
@@ -125,12 +155,13 @@ export default function AdminDashboard() {
   };
 
   const removeCategory = async (id) => {
-    await api.delete(`/admin/skills/${id}`);
-    if (editingCategoryId === id) {
-      setEditingCategoryId(null);
-      setCategoryForm(emptyCategory);
-    }
-    await refresh("Skill category deleted");
+    await withFeedback(async () => {
+      await api.delete(`/admin/skills/${id}`);
+      if (editingCategoryId === id) {
+        setEditingCategoryId(null);
+        setCategoryForm(emptyCategory);
+      }
+    }, "Skill category deleted");
   };
 
   const saveLink = async (event) => {
@@ -140,15 +171,16 @@ export default function AdminDashboard() {
       order: Number(linkForm.order) || 0,
     };
 
-    if (editingLinkId) {
-      await api.put(`/admin/links/${editingLinkId}`, payload);
-      setEditingLinkId(null);
-    } else {
-      await api.post("/admin/links", payload);
-    }
+    await withFeedback(async () => {
+      if (editingLinkId) {
+        await api.put(`/admin/links/${editingLinkId}`, payload);
+        setEditingLinkId(null);
+      } else {
+        await api.post("/admin/links", payload);
+      }
 
-    setLinkForm(emptyLink);
-    await refresh("Links updated");
+      setLinkForm(emptyLink);
+    }, "Links updated");
   };
 
   const editLink = (link) => {
@@ -162,12 +194,13 @@ export default function AdminDashboard() {
   };
 
   const removeLink = async (id) => {
-    await api.delete(`/admin/links/${id}`);
-    if (editingLinkId === id) {
-      setEditingLinkId(null);
-      setLinkForm(emptyLink);
-    }
-    await refresh("Link deleted");
+    await withFeedback(async () => {
+      await api.delete(`/admin/links/${id}`);
+      if (editingLinkId === id) {
+        setEditingLinkId(null);
+        setLinkForm(emptyLink);
+      }
+    }, "Link deleted");
   };
 
   if (isLoading) {
@@ -201,7 +234,13 @@ export default function AdminDashboard() {
 
       <main className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-8 lg:px-10">
         {message ? (
-          <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+          <div
+            className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
+              messageTone === "error"
+                ? "border-red-200 bg-red-50 text-red-700"
+                : "border-green-200 bg-green-50 text-green-700"
+            }`}
+          >
             {message}
           </div>
         ) : null}
@@ -277,6 +316,7 @@ export default function AdminDashboard() {
               value={profile.profileImage}
               onChange={(url) => setProfile((current) => ({ ...current, profileImage: url }))}
               label="Profile image"
+              helperText="Choose a portrait from your device. The preview updates immediately before you save the profile."
             />
             <button type="submit" className="rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white">
               Save profile
@@ -311,30 +351,26 @@ export default function AdminDashboard() {
 
         <AdminSection
           title="Project Management"
-          description="Create, update, remove, and reorder project cards. Uploaded images are previewed immediately."
+          description="Create, update, remove, and reorder project cards. Each project can now store up to five photos."
         >
           <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
             <div className="space-y-4 rounded-[1.75rem] bg-canvas p-5">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-ink">Project editor</h3>
-                {projectBeingEdited ? (
-                  <button
-                    onClick={() => setProjectBeingEdited(null)}
-                    className="text-sm font-semibold text-muted"
-                  >
-                    New project
-                  </button>
-                ) : (
-                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-muted">
-                    <Plus size={16} />
-                    Add project
-                  </span>
-                )}
+                <button
+                  type="button"
+                  onClick={resetProjectEditor}
+                  className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-semibold text-ink"
+                >
+                  <RefreshCcw size={15} />
+                  {projectBeingEdited ? "Start new project" : "Clear form"}
+                </button>
               </div>
               <ProjectForm
+                key={`${projectBeingEdited?._id || "new"}-${projectFormVersion}`}
                 initialValue={projectBeingEdited}
                 onSubmit={saveProject}
-                onCancel={() => setProjectBeingEdited(null)}
+                onCancel={resetProjectEditor}
               />
             </div>
             <div className="space-y-4">
@@ -351,17 +387,24 @@ export default function AdminDashboard() {
                   <div className="flex-1">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <h3 className="text-lg font-bold text-ink">{project.title}</h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-lg font-bold text-ink">{project.title}</h3>
+                          <span className="rounded-full bg-canvas px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                            {project.images?.length || 0} photos
+                          </span>
+                        </div>
                         <p className="mt-1 text-sm leading-6 text-muted">{project.description}</p>
                       </div>
                       <div className="flex gap-2">
                         <button
+                          type="button"
                           onClick={() => setProjectBeingEdited(project)}
                           className="rounded-full border border-line p-3 text-ink"
                         >
                           <Pencil size={16} />
                         </button>
                         <button
+                          type="button"
                           onClick={() => removeProject(project._id)}
                           className="rounded-full border border-red-200 p-3 text-red-600"
                         >
@@ -376,6 +419,18 @@ export default function AdminDashboard() {
                         </span>
                       ))}
                     </div>
+                    {project.images?.length > 1 ? (
+                      <div className="mt-4 flex gap-2 overflow-x-auto">
+                        {project.images.slice(0, 5).map((image, index) => (
+                          <img
+                            key={`${project._id}-${index}`}
+                            src={image}
+                            alt={`${project.title} ${index + 1}`}
+                            className="h-16 w-16 flex-none rounded-xl object-cover"
+                          />
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 </article>
               ))}
@@ -445,12 +500,14 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex gap-2">
                       <button
+                        type="button"
                         onClick={() => editCategory(category)}
                         className="rounded-full border border-line p-3 text-ink"
                       >
                         <Pencil size={16} />
                       </button>
                       <button
+                        type="button"
                         onClick={() => removeCategory(category._id)}
                         className="rounded-full border border-red-200 p-3 text-red-600"
                       >
@@ -532,10 +589,15 @@ export default function AdminDashboard() {
                       <p className="mt-1 text-sm text-muted">{link.url}</p>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => editLink(link)} className="rounded-full border border-line p-3 text-ink">
+                      <button
+                        type="button"
+                        onClick={() => editLink(link)}
+                        className="rounded-full border border-line p-3 text-ink"
+                      >
                         <Pencil size={16} />
                       </button>
                       <button
+                        type="button"
                         onClick={() => removeLink(link._id)}
                         className="rounded-full border border-red-200 p-3 text-red-600"
                       >
