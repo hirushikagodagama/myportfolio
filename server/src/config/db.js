@@ -7,6 +7,13 @@ export const connectDB = async () => {
     throw new Error("MONGODB_URI is not configured");
   }
 
-  await mongoose.connect(uri);
-  console.log("MongoDB connected");
+  try {
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 10000,
+    });
+    console.log("MongoDB connected");
+  } catch (error) {
+    const target = uri.replace(/\/\/([^@]+)@/, "//***:***@");
+    throw new Error(`MongoDB connection failed for ${target}: ${error.message}`);
+  }
 };
