@@ -6,6 +6,8 @@ const emptyProject = {
   title: "",
   description: "",
   techStack: "",
+  keyFeatures: "",
+  videoUrl: "",
   images: [""],
   liveUrl: "",
   githubUrl: "",
@@ -23,6 +25,7 @@ export default function ProjectForm({ initialValue, onSubmit, onCancel }) {
         ? {
             ...initialValue,
             techStack: initialValue.techStack?.join(", ") || "",
+            keyFeatures: initialValue.keyFeatures?.join("\n") || "",
             images:
               initialValue.images?.length > 0
                 ? initialValue.images
@@ -73,6 +76,8 @@ export default function ProjectForm({ initialValue, onSubmit, onCancel }) {
       await onSubmit({
         ...form,
         techStack: form.techStack,
+        keyFeatures: form.keyFeatures,
+        videoUrl: form.videoUrl,
         images,
         image: images[0] || "",
         order: Number(form.order) || 0,
@@ -122,6 +127,27 @@ export default function ProjectForm({ initialValue, onSubmit, onCancel }) {
           value={form.techStack}
           onChange={(event) => handleChange("techStack", event.target.value)}
           placeholder="React, Tailwind CSS, Express"
+          className="w-full rounded-2xl border-line bg-canvas"
+        />
+      </label>
+      <label className="block space-y-2">
+        <span className="text-sm font-semibold text-ink">Key Features</span>
+        <p className="text-xs text-muted">Add one feature per line.</p>
+        <textarea
+          rows={4}
+          value={form.keyFeatures}
+          onChange={(event) => handleChange("keyFeatures", event.target.value)}
+          placeholder="User authentication&#10;Responsive design"
+          className="w-full rounded-3xl border-line bg-canvas"
+        />
+      </label>
+      <label className="block space-y-2">
+        <span className="text-sm font-semibold text-ink">Video Demo URL</span>
+        <input
+          type="url"
+          value={form.videoUrl}
+          onChange={(event) => handleChange("videoUrl", event.target.value)}
+          placeholder="https://youtube.com/watch?v=..."
           className="w-full rounded-2xl border-line bg-canvas"
         />
       </label>

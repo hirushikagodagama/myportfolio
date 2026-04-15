@@ -23,6 +23,14 @@ const projectSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    videoUrl: {
+      type: String,
+      default: "",
+    },
+    keyFeatures: {
+      type: [String],
+      default: [],
+    },
     liveUrl: {
       type: String,
       default: "",

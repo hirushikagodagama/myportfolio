@@ -3,6 +3,7 @@ import { useAuth } from "./context/AuthContext";
 import HomePage from "./pages/HomePage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import LoginPage from "./pages/admin/LoginPage";
+import ProjectDetailsPage from "./pages/ProjectDetailsPage";
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -24,6 +25,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/projects/:id" element={<ProjectDetailsPage />} />
       <Route
         path="/admin/login"
         element={isAuthenticated ? <Navigate to="/admin" replace /> : <LoginPage />}

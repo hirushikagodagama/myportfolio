@@ -1,4 +1,5 @@
 import { ArrowUpRight, Github, Images } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function ProjectCard({ project }) {
   const gallery = project.images?.length > 0 ? project.images : project.image ? [project.image] : [];
@@ -28,7 +29,7 @@ export default function ProjectCard({ project }) {
       <div className="space-y-5 p-6">
         <div className="space-y-3">
           <h3 className="text-xl font-bold text-ink">{project.title}</h3>
-          <p className="leading-7 text-muted">{project.description}</p>
+          <p className="leading-7 text-muted line-clamp-3">{project.description}</p>
         </div>
         {gallery.length > 1 ? (
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -52,27 +53,13 @@ export default function ProjectCard({ project }) {
             </span>
           ))}
         </div>
-        <div className="flex items-center gap-4 text-sm font-semibold text-ink">
-          {project.liveUrl ? (
-            <a
-              href={project.liveUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2"
-            >
-              Live Demo <ArrowUpRight size={16} />
-            </a>
-          ) : null}
-          {project.githubUrl ? (
-            <a
-              href={project.githubUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2"
-            >
-              Source <Github size={16} />
-            </a>
-          ) : null}
+        <div className="flex items-center pt-2">
+          <Link
+            to={`/projects/${project._id}`}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-semibold text-white transition hover:bg-ink/90"
+          >
+            View Project <ArrowUpRight size={16} />
+          </Link>
         </div>
       </div>
     </article>

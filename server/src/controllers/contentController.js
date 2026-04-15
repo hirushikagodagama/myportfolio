@@ -26,6 +26,13 @@ const normalizeProjectPayload = (body) => {
         .map((item) => item.trim())
         .filter(Boolean);
 
+  const keyFeatures = Array.isArray(body.keyFeatures)
+    ? body.keyFeatures
+    : String(body.keyFeatures || "")
+        .split("\n")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
   const images = Array.isArray(body.images)
     ? body.images
     : Array.isArray(body.image)
@@ -40,6 +47,8 @@ const normalizeProjectPayload = (body) => {
   return {
     ...body,
     techStack,
+    keyFeatures,
+    videoUrl: body.videoUrl || "",
     images: gallery,
     image: gallery[0] || body.image || "",
     order: Number(body.order) || 0,
@@ -56,6 +65,18 @@ export const getPublicContent = async (_req, res) => {
   ]);
 
   return res.json({ profile, projects: projects.map(serializeProject), skills, links });
+};
+
+export const getPublicProject = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+    return res.json(serializeProject(project));
+  } catch (error) {
+    return res.status(500).json({ message: "Error fetching project details" });
+  }
 };
 
 export const getDashboardOverview = async (_req, res) => {
