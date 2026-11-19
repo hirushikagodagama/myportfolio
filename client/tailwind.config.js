@@ -15,12 +15,25 @@ export default {
         accent: "#b7d5c8",
         accentStrong: "#86b39d",
         sand: "#efe7db",
+        // Futuristic public theme (brand palette + derived tints for legibility)
+        void: "#020403",
+        carbon: "#141413",
+        steel: "#1A2324",
+        ember: {
+          DEFAULT: "#5F2E1B",
+          400: "#C8714A",
+          300: "#E39A73",
+        },
+        haze: "#E8E4DC",
+        fog: "#8E9A98",
       },
       boxShadow: {
         soft: "0 16px 40px rgba(15, 23, 42, 0.08)",
       },
       fontFamily: {
         sans: ["Manrope", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Space Grotesk", "Manrope", "ui-sans-serif", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       backgroundImage: {
         glow: "radial-gradient(circle at top left, rgba(183, 213, 200, 0.6), transparent 40%), radial-gradient(circle at bottom right, rgba(239, 231, 219, 0.8), transparent 35%)",
