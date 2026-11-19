@@ -3,8 +3,16 @@
 @tailwind utilities;
 
 :root {
+  --void: #020403;
+  --carbon: #141413;
+  --steel: #1a2324;
+  --ember: #5f2e1b;
+  --ember-bright: #c8714a;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
   color: #182230;
-  background: #f7f6f2;
+  background: var(--void);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -18,15 +26,17 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-  background:
-    radial-gradient(circle at top left, rgba(183, 213, 200, 0.28), transparent 28%),
-    radial-gradient(circle at 80% 10%, rgba(239, 231, 219, 0.9), transparent 24%),
-    #f7f6f2;
+  background: var(--void);
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+::selection {
+  background: rgba(200, 113, 74, 0.35);
+  color: #fff;
 }
 
 .ql-toolbar.ql-snow,
@@ -37,4 +47,303 @@ a {
 .ql-editor {
   min-height: 220px;
   font-size: 0.95rem;
+}
+
+/* ───────────── Futuristic theme primitives ───────────── */
+
+@layer components {
+  /* Page shell: deep void with a faint engineering grid */
+  .fx-shell {
+    position: relative;
+    isolation: isolate;
+    background-color: var(--void);
+    color: #e8e4dc;
+  }
+
+  .fx-shell::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(142, 154, 152, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(142, 154, 152, 0.06) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  }
+
+  /* Subtle CRT scanlines */
+  .fx-shell::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.018) 0px,
+      rgba(255, 255, 255, 0.018) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+
+  /* Glass HUD panel with steel fill */
+  .fx-panel {
+    position: relative;
+    background: linear-gradient(160deg, rgba(26, 35, 36, 0.72), rgba(20, 20, 19, 0.82));
+    border: 1px solid rgba(142, 154, 152, 0.14);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  /* HUD corner brackets */
+  .fx-corners {
+    position: relative;
+  }
+  .fx-corners::before,
+  .fx-corners::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+    border-color: var(--ember-bright);
+    opacity: 0.8;
+  }
+  .fx-corners::before {
+    top: -1px;
+    left: -1px;
+    border-top: 1px solid;
+    border-left: 1px solid;
+  }
+  .fx-corners::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 1px solid;
+    border-right: 1px solid;
+  }
+
+  /* Mono eyebrow label */
+  .fx-label {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #8e9a98;
+  }
+
+  /* Ember gradient text */
+  .fx-gradient-text {
+    background: linear-gradient(100deg, #f1e7dc 0%, #e39a73 45%, #c8714a 70%, #8a4529 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Primary button: ember core with glow */
+  .fx-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 0.95rem 1.5rem;
+    border-radius: 2px;
+    transition:
+      transform 160ms var(--ease-out),
+      box-shadow 200ms ease,
+      background-color 200ms ease,
+      border-color 200ms ease,
+      color 200ms ease;
+  }
+  .fx-btn:active {
+    transform: scale(0.97);
+  }
+  .fx-btn-primary {
+    background: var(--ember);
+    color: #fbefe6;
+    border: 1px solid rgba(227, 154, 115, 0.5);
+    box-shadow:
+      0 0 0 1px rgba(95, 46, 27, 0.4),
+      0 10px 40px -10px rgba(200, 113, 74, 0.55);
+  }
+  .fx-btn-ghost {
+    background: rgba(26, 35, 36, 0.4);
+    color: #e8e4dc;
+    border: 1px solid rgba(142, 154, 152, 0.25);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .fx-btn-primary:hover {
+      background: #74391f;
+      box-shadow:
+        0 0 0 1px rgba(227, 154, 115, 0.6),
+        0 14px 50px -8px rgba(200, 113, 74, 0.75);
+    }
+    .fx-btn-ghost:hover {
+      border-color: rgba(200, 113, 74, 0.7);
+      color: #fff;
+    }
+  }
+
+  /* Chip */
+  .fx-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #c9c4bb;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid rgba(142, 154, 152, 0.2);
+    background: rgba(2, 4, 3, 0.5);
+    border-radius: 2px;
+  }
+
+  /* Interactive card lift (fine pointers only) */
+  .fx-card {
+    transition:
+      transform 280ms var(--ease-out),
+      border-color 200ms ease,
+      box-shadow 280ms ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .fx-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(200, 113, 74, 0.45);
+      box-shadow: 0 30px 60px -30px rgba(200, 113, 74, 0.35);
+    }
+  }
+
+  .fx-nav-link {
+    position: relative;
+    transition: color 200ms ease;
+  }
+  .fx-nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -6px;
+    height: 1px;
+    background: var(--ember-bright);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 240ms var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .fx-nav-link:hover {
+      color: #fff;
+    }
+    .fx-nav-link:hover::after {
+      transform: scaleX(1);
+    }
+  }
+}
+
+/* ───────────── Motion ───────────── */
+
+/* Scroll reveal, toggled by useReveal() */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  filter: blur(4px);
+  transition:
+    opacity 700ms var(--ease-out),
+    transform 700ms var(--ease-out),
+    filter 700ms var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+@keyframes fx-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(200, 113, 74, 0.6);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 0 6px rgba(200, 113, 74, 0);
+  }
+}
+.fx-pulse {
+  animation: fx-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes fx-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.fx-orbit {
+  animation: fx-orbit 28s linear infinite;
+}
+.fx-orbit-reverse {
+  animation: fx-orbit 40s linear infinite reverse;
+}
+
+@keyframes fx-scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(400%);
+  }
+}
+.fx-scanbar {
+  animation: fx-scan 5s linear infinite;
+}
+
+@keyframes fx-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.fx-marquee {
+  animation: fx-marquee 40s linear infinite;
+}
+
+@keyframes fx-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.fx-caret {
+  animation: fx-blink 1s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal {
+    transform: none;
+    filter: none;
+    transition: opacity 300ms ease;
+  }
+  .fx-pulse,
+  .fx-orbit,
+  .fx-orbit-reverse,
+  .fx-scanbar,
+  .fx-marquee,
+  .fx-caret {
+    animation: none;
+  }
+  .fx-card,
+  .fx-btn {
+    transition: none;
+  }
 }
